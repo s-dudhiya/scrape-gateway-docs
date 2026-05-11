@@ -195,6 +195,7 @@ const NAV: { group: string; items: { id: string; label: string }[] }[] = [
 
 function DocsPage() {
   const [active, setActive] = useState("introduction");
+  const [issueOpen, setIssueOpen] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -250,12 +251,13 @@ function DocsPage() {
               v1 · docs
             </span>
           </div>
-          <a
-            href="#endpoint-scrape"
-            className="font-mono text-xs text-[var(--docs-muted)] hover:text-[var(--docs-fg)]"
+          <button
+            type="button"
+            onClick={() => setIssueOpen(true)}
+            className="rounded-md border border-[var(--docs-border)] bg-[var(--docs-surface)] px-3 py-1.5 font-mono text-xs text-[var(--docs-fg-soft)] hover:text-[var(--docs-fg)] hover:border-[var(--docs-amber)] hover:bg-[var(--docs-surface-2)] transition-colors"
           >
-            API Reference →
-          </a>
+            Raise an Issue
+          </button>
         </div>
       </header>
 
@@ -944,6 +946,234 @@ console.log(data.status_code, data.proxy);`}
             scraping-gateway · internal developer documentation
           </footer>
         </main>
+      </div>
+
+      {issueOpen && <IssueModal onClose={() => setIssueOpen(false)} />}
+    </div>
+  );
+}
+
+function IssueModal({ onClose }: { onClose: () => void }) {
+  const [domain, setDomain] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [email, setEmail] = useState("");
+  const [description, setDescription] = useState("");
+  const [images, setImages] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [dragOver, setDragOver] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+
+  useEffect(() => {
+    const urls = images.map((f) => URL.createObjectURL(f));
+    setPreviews(urls);
+    return () => urls.forEach((u) => URL.revokeObjectURL(u));
+  }, [images]);
+
+  const addFiles = (files: FileList | File[]) => {
+    const imgs = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    setImages((prev) => [...prev, ...imgs]);
+  };
+
+  const removeImage = (i: number) =>
+    setImages((prev) => prev.filter((_, idx) => idx !== i));
+
+  const validate = () => {
+    const e: Record<string, string> = {};
+    if (!domain.trim()) e.domain = "Domain is required";
+    if (!apiKey.trim()) e.apiKey = "API key is required";
+    if (!email.trim()) e.email = "Developer email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
+      e.email = "Enter a valid email";
+    if (!description.trim()) e.description = "Description is required";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleSubmit = async (ev: React.FormEvent) => {
+    ev.preventDefault();
+    if (!validate()) return;
+    setSubmitting(true);
+    // Submission stub — wire to backend when available.
+    await new Promise((r) => setTimeout(r, 600));
+    setSubmitting(false);
+    onClose();
+  };
+
+  const inputCls =
+    "w-full rounded-md border border-[var(--docs-border)] bg-[var(--docs-surface)] px-3 py-2 font-mono text-[13px] text-[var(--docs-fg)] placeholder:text-[var(--docs-muted)] focus:outline-none focus:border-[var(--docs-amber)] focus:ring-1 focus:ring-[var(--docs-amber)]/40 transition-colors";
+  const labelCls =
+    "mb-1.5 block font-mono text-[11px] uppercase tracking-wider text-[var(--docs-muted)]";
+  const errCls = "mt-1 font-mono text-[11px] text-[var(--docs-danger)]";
+
+  return (
+    <div
+      className="docs-theme fixed inset-0 z-50 flex items-center justify-center px-4 py-8"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="issue-modal-title"
+    >
+      <div
+        className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="relative z-10 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-lg border border-[var(--docs-border)] bg-[var(--docs-bg)] shadow-md">
+        <div className="flex items-center justify-between border-b border-[var(--docs-border)] px-5 py-3">
+          <h3
+            id="issue-modal-title"
+            className="text-base font-semibold text-[var(--docs-fg)]"
+          >
+            Report an Issue
+          </h3>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="rounded p-1 font-mono text-sm text-[var(--docs-muted)] hover:text-[var(--docs-fg)]"
+          >
+            ✕
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4">
+          <div>
+            <label className={labelCls}>Domain</label>
+            <input
+              type="text"
+              value={domain}
+              onChange={(e) => setDomain(e.target.value)}
+              placeholder="example.com"
+              className={inputCls}
+            />
+            {errors.domain && <div className={errCls}>{errors.domain}</div>}
+          </div>
+
+          <div>
+            <label className={labelCls}>API Key</label>
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="Enter your API key"
+              className={inputCls}
+              autoComplete="off"
+            />
+            {errors.apiKey && <div className={errCls}>{errors.apiKey}</div>}
+          </div>
+
+          <div>
+            <label className={labelCls}>Developer Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="developer@example.com"
+              className={inputCls}
+            />
+            {errors.email && <div className={errCls}>{errors.email}</div>}
+          </div>
+
+          <div>
+            <label className={labelCls}>Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Explain the issue in detail..."
+              rows={4}
+              className={`${inputCls} resize-y leading-6`}
+            />
+            {errors.description && (
+              <div className={errCls}>{errors.description}</div>
+            )}
+          </div>
+
+          <div>
+            <label className={labelCls}>Images (Optional)</label>
+            <label
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragOver(false);
+                if (e.dataTransfer.files) addFiles(e.dataTransfer.files);
+              }}
+              className={`flex cursor-pointer flex-col items-center justify-center rounded-md border border-dashed px-4 py-6 text-center transition-colors ${
+                dragOver
+                  ? "border-[var(--docs-amber)] bg-[var(--docs-surface-2)]"
+                  : "border-[var(--docs-border)] bg-[var(--docs-surface)] hover:bg-[var(--docs-surface-2)]"
+              }`}
+            >
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => e.target.files && addFiles(e.target.files)}
+              />
+              <div className="font-mono text-xs text-[var(--docs-fg-soft)]">
+                Drag &amp; drop images here, or click to select
+              </div>
+              <div className="mt-1 font-mono text-[11px] text-[var(--docs-muted)]">
+                PNG, JPG, GIF — multiple allowed
+              </div>
+            </label>
+
+            {previews.length > 0 && (
+              <div className="mt-3 grid grid-cols-4 gap-2">
+                {previews.map((src, i) => (
+                  <div
+                    key={i}
+                    className="group relative aspect-square overflow-hidden rounded border border-[var(--docs-border)] bg-[var(--docs-surface)]"
+                  >
+                    <img
+                      src={src}
+                      alt={`upload-${i}`}
+                      className="h-full w-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(i)}
+                      className="absolute right-1 top-1 rounded bg-black/60 px-1.5 py-0.5 font-mono text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100"
+                      aria-label="Remove image"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-end gap-2 border-t border-[var(--docs-border)] pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-md border border-[var(--docs-border)] bg-[var(--docs-surface)] px-3 py-1.5 font-mono text-xs text-[var(--docs-fg-soft)] hover:text-[var(--docs-fg)] hover:bg-[var(--docs-surface-2)] transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="rounded-md border border-[var(--docs-amber)] bg-[var(--docs-amber)] px-3 py-1.5 font-mono text-xs font-semibold text-white hover:opacity-90 disabled:opacity-60 transition-opacity"
+            >
+              {submitting ? "Submitting..." : "Submit Issue"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
