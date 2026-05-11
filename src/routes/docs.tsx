@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export const Route = createFileRoute("/docs")({
   head: () => ({
@@ -195,8 +195,10 @@ const NAV: { group: string; items: { id: string; label: string }[] }[] = [
 
 function DocsPage() {
   const [active, setActive] = useState("introduction");
+  const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
+    if (!mainRef.current) return;
     const ids = NAV.flatMap((g) => g.items.map((i) => i.id));
     const observer = new IntersectionObserver(
       (entries) => {
@@ -205,7 +207,7 @@ function DocsPage() {
           .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
         if (visible[0]) setActive(visible[0].target.id);
       },
-      { rootMargin: "-30% 0px -60% 0px", threshold: 0 },
+      { root: mainRef.current, rootMargin: "-30% 0px -60% 0px", threshold: 0 },
     );
     ids.forEach((id) => {
       const el = document.getElementById(id);
@@ -215,7 +217,7 @@ function DocsPage() {
   }, []);
 
   return (
-    <div className="docs-theme min-h-screen bg-[var(--docs-bg)] text-[var(--docs-fg)]">
+    <div className="docs-theme h-screen flex flex-col overflow-hidden bg-[var(--docs-bg)] text-[var(--docs-fg)]">
       <style>{`
         .docs-theme {
           --docs-bg: oklch(0.985 0.012 85);
@@ -237,7 +239,7 @@ function DocsPage() {
       `}</style>
 
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-[var(--docs-border)] bg-[var(--docs-bg)]/90 backdrop-blur">
+      <header className="shrink-0 border-b border-[var(--docs-border)] bg-[var(--docs-bg)]/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
           <div className="flex items-center gap-2">
             <div className="h-2.5 w-2.5 rounded-sm bg-[var(--docs-accent)]" />
@@ -257,10 +259,10 @@ function DocsPage() {
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-7xl gap-10 px-6">
+      <div className="mx-auto flex w-full max-w-7xl flex-1 min-h-0">
         {/* Sidebar */}
-        <aside className="hidden lg:block w-60 shrink-0 py-10">
-          <nav className="sticky top-20 space-y-6">
+        <aside className="hidden lg:block w-60 shrink-0 overflow-y-auto border-r border-stone-200 py-10 pl-6 pr-4">
+          <nav className="space-y-6">
             {NAV.map((group) => (
               <div key={group.group}>
                 <div className="mb-2 font-mono text-[11px] uppercase tracking-[0.16em] text-[var(--docs-muted)]">
@@ -288,7 +290,17 @@ function DocsPage() {
         </aside>
 
         {/* Main */}
-        <main className="min-w-0 flex-1 py-10">
+        <main
+          ref={mainRef}
+          className="min-w-0 flex-1 overflow-y-auto px-6 py-8 lg:pl-10"
+        >
+          <div
+            role="alert"
+            className="mb-6 rounded-md border border-[var(--docs-amber)]/50 bg-[oklch(0.96_0.04_80)] px-4 py-2.5 text-sm font-bold text-[oklch(0.36_0.08_60)]"
+          >
+            ⚠ This website is currently building. If you find any issue, please contact the developer.
+          </div>
+
           <div className="mb-10">
             <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-[var(--docs-accent)]">
               Documentation
