@@ -195,6 +195,7 @@ const NAV: { group: string; items: { id: string; label: string }[] }[] = [
 
 function DocsPage() {
   const [active, setActive] = useState("introduction");
+  const [issueOpen, setIssueOpen] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
