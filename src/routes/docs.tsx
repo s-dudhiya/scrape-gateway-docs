@@ -251,12 +251,13 @@ function DocsPage() {
               v1 · docs
             </span>
           </div>
-          <a
-            href="#endpoint-scrape"
-            className="font-mono text-xs text-[var(--docs-muted)] hover:text-[var(--docs-fg)]"
+          <button
+            type="button"
+            onClick={() => setIssueOpen(true)}
+            className="rounded-md border border-[var(--docs-border)] bg-[var(--docs-surface)] px-3 py-1.5 font-mono text-xs text-[var(--docs-fg-soft)] hover:text-[var(--docs-fg)] hover:border-[var(--docs-amber)] hover:bg-[var(--docs-surface-2)] transition-colors"
           >
-            API Reference →
-          </a>
+            Raise an Issue
+          </button>
         </div>
       </header>
 
